@@ -6,6 +6,8 @@
 #include <iostream>
 #include "opencv2/imgcodecs.hpp"
 #include <opencv2/core.hpp>
+
+
 #define CVUI_IMPLEMENTATION
 #include "cvui.h"
 
@@ -17,15 +19,15 @@
 
 // initialize values for StereoSGBM parameters
 int numDisparities = 1;
-int blockSize = 2;
+int blockSize = 1;
 int preFilterType = 1;
-int preFilterSize = 1;
-int preFilterCap = 31;
+int preFilterSize = 0;
+int preFilterCap = 0;
 int minDisparity = 0;
-int uniquenessRatio = 15;
-int speckleRange = 1;
-int speckleWindowSize = 50;
-int disp12MaxDiff = -1;
+int uniquenessRatio = 0;
+int speckleRange = 0;
+int speckleWindowSize = 0;
+int disp12MaxDiff = 0;
 int dispType = CV_16S;
 int P1=0,P2=0;
 
@@ -54,7 +56,7 @@ int main()
     int w,h;
     h=imgL.rows;
     w=imgL.cols;
-    int n=2;
+    int n=3;
     int cn = imgL.channels();
 
     enum { STEREO_BM=0, STEREO_SGBM=1, STEREO_HH=2, STEREO_VAR=3, STEREO_3WAY=4, STEREO_HH4=5 };
@@ -76,7 +78,7 @@ int main()
     cvui::init(WINDOW_NAME);
     cv::resizeWindow(WINDOW_NAME,w*n,h*n);// increase image size for display purposes
 
-cv::Mat imgL_gray,  imgR_gray;
+    cv::Mat imgL_gray,  imgR_gray;
     while (true)
     {
         // Converting images to grayscale
@@ -97,21 +99,24 @@ cv::Mat imgL_gray,  imgR_gray;
         // Calculating disparith using the StereoBM algorithm
         stereo->compute(imgL_gray,imgR_gray,disparity16S);
 
-   //     cv::ximgproc::getDisparityVis(disparity16S,disparity8U,15);
-        imwrite("../viewImg/bin/Debug/disparityImg.tif", disparity16S); // save it for pixel value (disparity) detection
+        //     cv::ximgproc::getDisparityVis(disparity16S,disparity8U,15);
+       // imwrite("../viewImg/bin/Debug/disparityImg.tif", disparity16S); // save it for pixel value (disparity) detection
+        imwrite("disparityImg.tif", disparity16S); // save it for pixel value (disparity) detection
 
 
         // NOTE: Code returns a 16bit signed single channel image,
         // CV_16S containing a disparity map scaled by 16. Hence it
         // is essential to convert it to CV_32F and scale it down 16 times.
 
-        // Converting disparity values to CV_32F from CV_16S
-        disparity16S.convertTo(disparity32F,CV_32F, 1.0);
+
 
         // Displaying the disparity map
         cv::Mat disparity8U_3c;
-        disparity32F.convertTo(disparity8U, CV_8U, 255/(numDisparities*16.));//eq 2
-        cv::applyColorMap(disparity8U, disparity8U_3c, cv::COLORMAP_JET);
+
+        double minVal, maxVal;
+        minMaxLoc(disparity16S, &minVal, &maxVal);
+        disparity16S.convertTo(disparity8U, CV_8UC1, 255/(maxVal - minVal));
+        cv::applyColorMap(disparity8U, disparity8U_3c, cv::COLORMAP_JET);//{TURBO  PARULA  JET
 
         cv::Mat disparity = disparity8U_3c.clone();
         cv::resize(disparity, disparity, cv::Size(w*n, h*n), cv::INTER_LINEAR);
